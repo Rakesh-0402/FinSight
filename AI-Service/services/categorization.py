@@ -1,3 +1,5 @@
+import joblib
+from pathlib import Path
 import numpy as np
 import re
 import pandas as pd
@@ -312,8 +314,15 @@ def train_model():
     return vectorizer, model
 
 
-# Train model when service starts
-vectorizer, model = train_model()
+# Load the pre-trained model at startup.
+MODEL_PATH = Path(__file__).resolve().parent.parent / "models" / "categorization.joblib"
+
+saved_model = joblib.load(MODEL_PATH)
+
+vectorizer = saved_model["vectorizer"]
+model = saved_model["model"]
+
+print("Pre-trained categorization model loaded successfully.")
 
 # SINGLE TRANSACTION CATEGORIZATION
 
