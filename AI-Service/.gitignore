@@ -1,0 +1,15 @@
+# Python environment
+.venv/
+venv/
+__pycache__/
+*.pyc
+
+# Environment secrets
+.env
+.env.*
+!.env.example
+
+# Logs and caches
+*.log
+.pytest_cache/
+.mypy_cache/
