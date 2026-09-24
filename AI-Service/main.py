@@ -158,10 +158,15 @@ async def process_transactions(
             "transactions": transactions
         }
 
+    except HTTPException:
+        raise
+
     except Exception as error:
+        print(f"CSV processing error: {error}")
+
         raise HTTPException(
             status_code=500,
-            detail=str(error)
+            detail="Failed to process CSV"
         )
 
 
