@@ -85,21 +85,61 @@ router.post("/csv", uploadLimiter, protectedRoute, csvUpload, async (req, res) =
         new Blob([fileBuffer], { type: "text/csv" }),
         req.file.originalname
     );
-    //process csv
-    const response = await fetch(
-      `${process.env.AI_SERVICE_URL}/process-transactions`,
-      {
-        method: "POST",
-        body: formData,
-      }
-    );
+    //process csv using fastAPI
+    // Process CSV using FastAPI
+    let response;
 
-    const data = await response.json();
+    try {
+      response = await fetch(
+        `${process.env.AI_SERVICE_URL}/process-transactions`,
+        {
+          method: "POST",
+          body: formData,
+          signal: AbortSignal.timeout(120000), // 2 minutes
+        }
+      );
+    } catch (error) {
+      console.error("CSV AI connection error:", error);
+
+      return res.status(503).json({
+        success: false,
+        message:
+          "AI processing service is starting or temporarily unavailable. Please try again shortly.",
+      });
+    }
+
+    // Read as text first because Render may return an HTML error page.
+    const responseText = await response.text();
 
     if (!response.ok) {
-      throw new Error(data.detail || "Python processing failed");
+      console.error(
+        "CSV AI service failed:",
+        response.status,
+        responseText.slice(0, 500)
+      );
+
+      return res.status(503).json({
+        success: false,
+        message:
+          "AI processing service is temporarily unavailable. Please try again shortly.",
+      });
     }
-    
+
+    let data;
+
+    try {
+      data = JSON.parse(responseText);
+    } catch (error) {
+      console.error(
+        "CSV AI returned invalid JSON:",
+        responseText.slice(0, 500)
+      );
+
+      return res.status(502).json({
+        success: false,
+        message: "AI processing service returned an invalid response.",
+      });
+    }
     const transactions = data.transactions || [];
 
     //empty transactions section
