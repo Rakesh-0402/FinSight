@@ -157,36 +157,51 @@ export const getForecast = async (req, res) => {
     }
 
     // Send the entire continuous history, not just six months.
-    const response = await fetch(
-      `${process.env.AI_SERVICE_URL}/forecast-expenses`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          monthlyData: historicalData.map(
-            ({ year, month, expenses }) => ({
-              year,
-              month,
-              expenses,
-            })
-          ),
-        }),
-      }
-    );
+    let response;
+
+    try {
+      response = await fetch(
+        `${process.env.AI_SERVICE_URL}/forecast-expenses`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            monthlyData: historicalData.map(
+              ({ year, month, expenses }) => ({
+                year,
+                month,
+                expenses,
+              })
+            ),
+          }),
+          signal: AbortSignal.timeout(120000), // Allow up to 2 minutes
+        }
+      );
+    } catch (error) {
+      console.error("Forecast AI connection error:", error);
+
+      return res.status(503).json({
+        success: false,
+        message:
+          "Forecast service is starting or temporarily unavailable. Please try again shortly.",
+      });
+    }
 
     if (!response.ok) {
       const errorText = await response.text();
 
       console.error(
         "Forecast service failed:",
-        errorText
+        response.status,
+        errorText.slice(0, 500)
       );
 
-      return res.status(500).json({
+      return res.status(503).json({
         success: false,
-        message: "AI forecast service failed",
+        message:
+          "Forecast service is temporarily unavailable. Please try again shortly.",
       });
     }
 
