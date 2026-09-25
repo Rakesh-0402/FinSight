@@ -1,3 +1,4 @@
+//forecast controller gives priority to recorded expenses over a confirmed 0 expense month
 import { API_URL } from "@/lib/utils";
 import { authFetch } from "@/utils/authFetch";
 import {
@@ -282,9 +283,21 @@ export default function Forecast() {
     return (
       <div className="rounded-3xl border border-red-200 bg-red-50 p-6 dark:border-red-900 dark:bg-red-950/30">
 
-        <p className="text-sm font-medium text-red-700 dark:text-red-400">
+        <p 
+          role ="alert"
+          className="text-sm font-medium text-red-700 dark:text-red-400"
+        >
           {error}
         </p>
+        <Button
+        type="button"
+        variant="outline"
+        onClick={fetchForecast}
+        className="mt-4"
+      >
+        <RotateCcw size={16} />
+        Try Again
+      </Button>
       </div>
     );
   }
