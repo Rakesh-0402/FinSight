@@ -29,7 +29,22 @@ export const startBankConnection = async (req, res) => {
       }
     );
 
-    const tokenData = await tokenResponse.json();
+    const tokenText = await tokenResponse.text();
+
+    console.log("Setu token status:", tokenResponse.status);
+    console.log("Setu token raw:", tokenText.slice(0, 500));
+
+    let tokenData;
+
+    try {
+      tokenData = JSON.parse(tokenText);
+    } catch {
+      return res.status(502).json({
+        success: false,
+        message: "Setu authentication returned invalid response",
+        raw: tokenText.slice(0, 200),
+      });
+    }
 
     if (!tokenResponse.ok) {
       console.error("Setu token error:", tokenData);
@@ -81,7 +96,22 @@ export const startBankConnection = async (req, res) => {
       }
     );
 
-    const consentData = await consentResponse.json();
+    const consentText = await consentResponse.text();
+
+    console.log("Setu consent status:", consentResponse.status);
+    console.log("Setu consent raw:", consentText.slice(0, 500));
+
+    let consentData;
+
+    try {
+      consentData = JSON.parse(consentText);
+    } catch {
+      return res.status(502).json({
+        success: false,
+        message: "Setu consent API returned invalid response",
+        raw: consentText.slice(0, 200),
+      });
+    }
 
     if (!consentResponse.ok) {
       console.error(
