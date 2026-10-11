@@ -7,6 +7,8 @@ import UploadHistory from "../models/UploadHistory.js";
 import { createTransactionHash } from "../utils/createTransactionHash.js";
 import Notification from "../models/Notification.js"
 import { uploadLimiter } from "../middleware/rateLimiters.js";
+import Account from "../models/Account.js";
+
 const router = express.Router();
 
 //receives the  validated csv file
@@ -72,6 +74,28 @@ router.post("/csv", uploadLimiter, protectedRoute, csvUpload, async (req, res) =
       return res.status(400).json({
         success: false,
         message: "Please upload a CSV file",
+      });
+    }
+    const { account } = req.body;
+
+    //validate the real finance account not user account
+    if (!account) {
+      return res.status(400).json({
+        success: false,
+        message: "Please select an account for this statement",
+      });
+    }
+
+    const selectedAccount = await Account.findOne({
+      _id: account,
+      user: req.user._id,
+      isActive: true,
+    });
+
+    if (!selectedAccount) {
+      return res.status(404).json({
+        success: false,
+        message: "Selected account not found",
       });
     }
 
@@ -156,12 +180,14 @@ router.post("/csv", uploadLimiter, protectedRoute, csvUpload, async (req, res) =
     //check existing  upload history
     const existingUpload = await UploadHistory.findOne({
         user: req.user._id,
+        account : selectedAccount._id,
         contentHash,
     });
 
     if (existingUpload) {
       const existingTransactionCount = await Transaction.countDocuments({
           user: req.user._id,
+          account : selectedAccount._id,
           uploadId: existingUpload._id,
       });
 
@@ -191,6 +217,7 @@ router.post("/csv", uploadLimiter, protectedRoute, csvUpload, async (req, res) =
 
     //create  new uploadHistory
     const uploadHistory = await UploadHistory.create({
+      account : selectedAccount._id,
       user: req.user._id,
       contentHash,
       transactionCount: transactions.length,
@@ -204,7 +231,11 @@ router.post("/csv", uploadLimiter, protectedRoute, csvUpload, async (req, res) =
       (transaction) => ({
         ...transaction,
         user: req.user._id,
+        account: selectedAccount._id,
         uploadId : uploadHistory._id,
+        source:
+            selectedAccount.type === "credit_card" ? "credit_card_csv" : "bank_csv",
+        balanceApplied: false,
       })
     );
 

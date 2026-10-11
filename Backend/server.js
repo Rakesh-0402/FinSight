@@ -12,7 +12,8 @@ import insightRoutes from "./routes/insightRoutes.js";
 import chatRoutes from "./routes/chatRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
 import notificationRoutes from "./routes/notificationRoutes.js";
-
+import accountRoutes from "./routes/accountRoutes.js";
+import accountAggregatorRoutes from "./routes/accountAggregatorRoutes.js";
 const app = express();
 app.set("trust proxy", 1);
 
@@ -20,7 +21,7 @@ app.use(cors({
   origin : process.env.FRONTEND_URL,
   credentials : true,
 }));
-app.use(helmet());
+app.use(helmet());//adds the protection around the cross-origin resource behaviour
 
 app.use(express.json());
 connectDB();
@@ -40,6 +41,11 @@ app.use("/api/insights",insightRoutes);
 app.use("/api/chat", chatRoutes);
 app.use("/api/auth",authRoutes);
 app.use("/api/notifications", notificationRoutes);
+app.use("/api/accounts", accountRoutes);
+app.use(
+  "/api/account-aggregator",
+  accountAggregatorRoutes
+);
 
 const PORT = process.env.PORT || 5000;
 

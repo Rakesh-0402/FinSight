@@ -70,7 +70,8 @@ export const getAnalyticsData = async (req, res) => {
     ]);
 
     let income = 0;
-    let expenses = 0;
+    let grossExpenses = 0;
+    let refunds = 0;
 
     summary.forEach((item) => {
       if (item._id === "income") {
@@ -78,15 +79,23 @@ export const getAnalyticsData = async (req, res) => {
       }
 
       if (item._id === "expense") {
-        expenses = item.total;
+        grossExpenses = item.total;
+      }
+
+      if (item._id === "refund") {
+        refunds = item.total;
       }
     });
+
+    const expenses = Math.max(0, grossExpenses - refunds);
 
     const expenseStats = await Transaction.aggregate([
       {
         $match: {
           ...transactionFilter,
-          type: "expense",
+          type: {
+            $in: ["expense", "refund"],
+          },
         },
       },
       {
@@ -109,7 +118,15 @@ export const getAnalyticsData = async (req, res) => {
       {
         $group: {
           _id: "$category",
-          amount: { $sum: "$amount" },
+          amount: {
+            $sum: {
+              $cond: [
+                { $eq: ["$type", "refund"] },
+                { $multiply: ["$amount", -1] },
+                "$amount",
+              ],
+            },
+          },
           count: { $sum: 1 },
         },
       },
@@ -133,7 +150,7 @@ export const getAnalyticsData = async (req, res) => {
         $match: {
           ...transactionFilter,
           type: {
-            $in: ["income", "expense"],
+            $in: ["income", "expense", "refund"],
           },
         },
       },
@@ -159,7 +176,13 @@ export const getAnalyticsData = async (req, res) => {
               $cond: [
                 { $eq: ["$type", "expense"] },
                 "$amount",
-                0,
+                {
+                  $cond: [
+                    { $eq: ["$type", "refund"] },
+                    { $multiply: ["$amount", -1] },
+                    0,
+                  ],
+                },
               ],
             },
           },
@@ -200,10 +223,12 @@ export const getAnalyticsData = async (req, res) => {
 
       summary: {
         income,
+        grossExpenses,
+        refunds,
         expenses,
         balance: income - expenses,
         incomeExpenseRatio:
-          expenses > 0 ? income / expenses : 0,
+        expenses > 0 ? income / expenses : 0,
       },
 
       expenseStats: {

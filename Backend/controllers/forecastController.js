@@ -18,7 +18,12 @@ export const getForecast = async (req, res) => {
         {
           $match: {
             user: userId,
-            type: "expense",
+
+            // Only real spending and refunds affect forecast.
+            type: {
+              $in: ["expense", "refund"],
+            },
+
             date: {
               $lt: new Date(
                 Date.UTC(currentYear, currentMonth, 1)
@@ -26,21 +31,54 @@ export const getForecast = async (req, res) => {
             },
           },
         },
+
         {
           $group: {
             _id: {
               year: { $year: "$date" },
               month: { $month: "$date" },
             },
-            expenses: { $sum: "$amount" },
+
+            grossExpenses: {
+              $sum: {
+                $cond: [
+                  { $eq: ["$type", "expense"] },
+                  "$amount",
+                  0,
+                ],
+              },
+            },
+
+            refunds: {
+              $sum: {
+                $cond: [
+                  { $eq: ["$type", "refund"] },
+                  "$amount",
+                  0,
+                ],
+              },
+            },
           },
         },
+
         {
           $project: {
             _id: 0,
             year: "$_id.year",
             month: "$_id.month",
-            expenses: 1,
+
+            // Monthly spending cannot be negative.
+            expenses: {
+              $max: [
+                {
+                  $subtract: [
+                    "$grossExpenses",
+                    "$refunds",
+                  ],
+                },
+                0,
+              ],
+            },
           },
         },
       ]),

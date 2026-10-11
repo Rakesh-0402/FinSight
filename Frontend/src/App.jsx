@@ -17,6 +17,8 @@ import Profile from "./pages/Profile";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import PublicRoute from "./components/PublicRoute";
+import Accounts from "@/pages/Accounts";
+import AACallback from "@/pages/AACallback";
 
 function App() {
   return (
@@ -28,23 +30,23 @@ function App() {
           <Route path ="/signup" element ={<PublicRoute><Signup/></PublicRoute>}/>
 
           <Route path ="/login" element ={<PublicRoute><Login/></PublicRoute>}/>
-          <Route
-  path="/forgot-password"
-  element={
-    <PublicRoute>
-      <ForgotPassword />
-    </PublicRoute>
-  }
-/>
+          <Route 
+            path="/forgot-password"
+            element={
+              <PublicRoute>
+                <ForgotPassword />
+              </PublicRoute>
+            }
+          />
 
-<Route
-  path="/reset-password/:token"
-  element={
-    <PublicRoute>
-      <ResetPassword />
-    </PublicRoute>
-  }
-/>
+          <Route
+            path="/reset-password/:token"
+            element={
+              <PublicRoute>
+                <ResetPassword />
+              </PublicRoute>
+            }
+          />
 
           {/*Protected routes*/}
 
@@ -65,6 +67,10 @@ function App() {
             <Route path="/chatbot" element={<Chatbot/>} />
 
             <Route path ="/profile" element ={<Profile/>}/>
+
+            <Route path="/accounts" element={<Accounts />} />
+
+            <Route path="/accounts/aa/callback" element={<AACallback />}/>
 
           </Route>
 

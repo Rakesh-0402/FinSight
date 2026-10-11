@@ -2,7 +2,7 @@ import { API_URL } from "@/lib/utils";
 import { useState } from "react";
 import { authFetch } from "@/utils/authFetch";
 import { toast } from "sonner";
-import { manualExpenseSchema } from "@/schemas/transactionSchema";
+import { manualTransactionSchema } from "@/schemas/transactionSchema";
 import {
   UploadCloud,
   FileText,
@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/card";
 
 import {Badge} from "@/components/ui/badge";
+import { useEffect } from "react";
 
 // Use the user's local calendar date, not UTC, as the latest allowed expense date.
 const getTodayLocalDate = () => {
@@ -34,16 +35,15 @@ const getTodayLocalDate = () => {
 
 const Upload = () => {
   const [isDragging, setIsDragging] = useState(false);
-
   const token = localStorage.getItem("token");
-
   const [file, setFile] = useState(null);
-
   const [description,setDescription] = useState("");
-
   const [amount, setAmount] = useState("");
-
   const [date, setDate] = useState("");
+  const [accounts, setAccounts] = useState([]);
+  const [selectedAccount, setSelectedAccount] = useState("");
+  const [transactionType, setTransactionType] = useState("expense");
+  const [transferAccount, setTransferAccount] = useState("");
 
   const handleSelectedFile = (selectedFile) => {
     if (!selectedFile) return;
@@ -74,14 +74,44 @@ const Upload = () => {
     handleSelectedFile(droppedFile);
   };
 
+   //fetch accounts
+  useEffect(() => {
+    const fetchAccounts = async () => {
+      try {
+        const response = await authFetch(`${API_URL}/api/accounts`);
+
+        if (!response) return;
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.message || "Failed to load accounts");
+        }
+
+        setAccounts(data.accounts || []);
+      } catch (error) {
+        console.error("Account fetch failed:", error);
+        toast.error("Failed to load accounts");
+      }
+    };
+
+    fetchAccounts();
+  }, []);
+
   const handleUpload = async () => {
     if (!file) {
       toast.error("Please select a CSV file");
       return;
     }
 
+  if (!selectedAccount) {
+    toast.error("Please select an account");
+    return;
+  }
   const formData = new FormData();
   formData.append("file", file);
+  formData.append("account", selectedAccount);
+
     try {
       const response = await authFetch(`${API_URL}/api/upload/csv`,
           {
@@ -118,16 +148,21 @@ const Upload = () => {
 
       try {
         if (date && date > getTodayLocalDate()) {
-          toast.error("Future dates are not allowed for manual expenses");
+          toast.error("Future dates are not allowed");
           return;
         }
 
-        const result = manualExpenseSchema.safeParse({
+        const result = manualTransactionSchema.safeParse({
           description,
           amount: Number(amount),
           date,
-          type: "expense",
+          type: transactionType,
           source: "manual",
+          account: selectedAccount,
+          transferAccount:
+            ["transfer", "credit_card_payment"].includes(transactionType)
+              ? transferAccount
+              : undefined,
         });
 
         if (!result.success) {
@@ -145,7 +180,7 @@ const Upload = () => {
               body: JSON.stringify(result.data),
             }
           );
-          if (!response) return;
+        if (!response) return;
 
         const data = await response.json();
 
@@ -153,21 +188,23 @@ const Upload = () => {
           throw new Error(data.message);
         }
 
-        toast.success("Expense added successfully");
+        toast.success("Transaction added successfully");
         setDescription("");
         setAmount("");
         setDate("");
+        setTransactionType("expense");
+        setTransferAccount("");
       } 
       catch (error) {
-        console.error("Add expense failed:",error);
-        toast.error(error.message ||"Failed to add expense");
+        console.error("Add Transaction failed:",error);
+        toast.error(error.message ||"Failed to add Transaction");
       }
     };
 
   const steps = [
     {
       title: "Upload / Add",
-      description: "Import a CSV or record a cash expense manually.",
+      description: "Import a CSV or record a cash Transaction manually.",
       icon: UploadCloud,
       iconClass:"bg-[#4F6BFF]/10 text-[#4F6BFF] dark:bg-[#4F6BFF]/20 dark:text-[#8EA0FF]",
     },
@@ -257,6 +294,26 @@ const Upload = () => {
           </CardHeader>
 
           <CardContent>
+            <div className="mb-4">
+              <label className="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-300">
+                Account
+              </label>
+
+              <select
+                value={selectedAccount}
+                onChange={(e) => setSelectedAccount(e.target.value)}
+                className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+              >
+                <option value="">Select account</option>
+
+                {accounts.map((account) => (
+                  <option key={account._id} value={account._id}>
+                    {account.name}
+                    {account.institution ? ` - ${account.institution}` : ""}
+                  </option>
+                ))}
+              </select>
+            </div>
 
            <label
               onDragOver={handleDragOver}
@@ -328,11 +385,11 @@ const Upload = () => {
 
               <div>
                 <CardTitle className="text-lg font-bold text-[#07111F] dark:text-white">
-                  Add Cash Expense
+                  Add Transaction
                 </CardTitle>
 
                 <CardDescription className="mt-1">
-                  Record expenses that do not appear in your bank statement.
+                  Record Transactions that do not appear in your bank statement.
                 </CardDescription>
               </div>
             </div>
@@ -344,6 +401,71 @@ const Upload = () => {
               onSubmit={handleAddExpense}
               className="space-y-5"
             >
+              <div>
+                <label className="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-300">
+                  Account
+                </label>
+
+                <select
+                  value={selectedAccount}
+                  onChange={(e) => setSelectedAccount(e.target.value)}
+                  className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                >
+                  <option value="">Select account</option>
+
+                  {accounts.map((account) => (
+                    <option key={account._id} value={account._id}>
+                      {account.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-300">
+                  Transaction Type
+                </label>
+
+                <select
+                  value={transactionType}
+                  onChange={(e) => {
+                    setTransactionType(e.target.value);
+                    setTransferAccount("");
+                  }}
+                  className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                >
+                  <option value="expense">Expense</option>
+                  <option value="income">Income</option>
+                  <option value="transfer">Transfer</option>
+                  <option value="credit_card_payment">Credit Card Payment</option>
+                  <option value="refund">Refund</option>
+                </select>
+              </div>
+              
+              {/* Destination account selector*/}
+              {["transfer", "credit_card_payment"].includes(transactionType) && (
+                <div>
+                  <label className="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-300">
+                    Destination Account
+                  </label>
+
+                  <select
+                    value={transferAccount}
+                    onChange={(e) => setTransferAccount(e.target.value)}
+                    className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                  >
+                    <option value="">Select destination account</option>
+
+                    {accounts
+                      .filter((account) => account._id !== selectedAccount)
+                      .map((account) => (
+                        <option key={account._id} value={account._id}>
+                          {account.name}
+                        </option>
+                      ))}
+                  </select>
+                </div>
+              )}
               {/* Description */}
 
               <div>
@@ -401,7 +523,7 @@ const Upload = () => {
                 className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#07111F] px-4 py-3.5 text-sm font-semibold text-white transition hover:-translate-y-0.5 hover:shadow-lg dark:bg-white dark:text-[#07111F]"
               >
                 <ReceiptText size={17}/>
-                Add Expense
+                Add Transaction
               </button>
             </form>
           </CardContent>

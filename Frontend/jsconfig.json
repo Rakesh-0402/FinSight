@@ -1,3 +1,4 @@
+// configure path aliases for shadcn ui
 {
   "compilerOptions": {
     "baseUrl": ".",

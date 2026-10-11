@@ -818,6 +818,10 @@ const deleteAllTransactions = async () => {
                 </th>
 
                 <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wide text-slate-400">
+                  Account
+                </th>
+
+                <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wide text-slate-400">
                   Category
                 </th>
 
@@ -880,6 +884,35 @@ const deleteAllTransactions = async () => {
                               {transaction.description}
                             </p>
                           </div>
+                        </td>
+
+                        {/* Account */}
+                        <td className="px-6 py-4">
+                          {["transfer", "credit_card_payment"].includes(transaction.type) ? (
+                            <div className="text-xs text-slate-500 dark:text-slate-400">
+                              <span className="font-medium text-slate-700 dark:text-slate-300">
+                                {transaction.account?.name || "Unknown Account"}
+                              </span>
+
+                              <span className="mx-1.5">→</span>
+
+                              <span className="font-medium text-slate-700 dark:text-slate-300">
+                                {transaction.transferAccount?.name || "Unknown Account"}
+                              </span>
+                            </div>
+                          ) : (
+                            <div>
+                              <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                                {transaction.account?.name || "Unknown Account"}
+                              </p>
+
+                              {transaction.account?.last4 && (
+                                <p className="mt-1 text-xs text-slate-400">
+                                  •••• {transaction.account.last4}
+                                </p>
+                              )}
+                            </div>
+                          )}
                         </td>
 
                         {/* Category */}
@@ -993,7 +1026,7 @@ const deleteAllTransactions = async () => {
                   ) : (
                     <tr>
                       <td
-                        colSpan="7"
+                        colSpan="8"
                         className="px-6 py-16 text-center"
                       >
                         <div className="mx-auto flex max-w-xs flex-col items-center">
@@ -1062,6 +1095,21 @@ const deleteAllTransactions = async () => {
                             <p className="mt-1 text-xs text-slate-400">
                               {formatDate(transaction.date)}
                             </p>
+
+                            {["transfer", "credit_card_payment"].includes(transaction.type) ? (
+                              <p className="mt-1 text-xs font-medium text-slate-500 dark:text-slate-400">
+                                {transaction.account?.name || "Unknown Account"}
+                                {" → "}
+                                {transaction.transferAccount?.name || "Unknown Account"}
+                              </p>
+                            ) : (
+                              <p className="mt-1 text-xs font-medium text-slate-500 dark:text-slate-400">
+                                {transaction.account?.name || "Unknown Account"}
+                                {transaction.account?.last4
+                                  ? ` •••• ${transaction.account.last4}`
+                                  : ""}
+                              </p>
+                            )}
                           </div>
 
                           <p

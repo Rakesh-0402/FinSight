@@ -30,9 +30,6 @@ indian_df = pd.read_csv(
 print("Indian dataset columns:")
 print(indian_df.columns.tolist())
 
-print("\nFirst 5 rows:")
-print(indian_df.head())
-
 
 # --------------------------------------------------
 # 3. Rename Indian columns

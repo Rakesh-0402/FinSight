@@ -6,13 +6,9 @@ import "./index.css";
 
 import { ThemeProvider } from "./context/ThemeContext";
 
-import {
-  TooltipProvider,
-} from "@/components/ui/tooltip";
+import {TooltipProvider} from "@/components/ui/tooltip";
 
-import {
-  Toaster,
-} from "@/components/ui/sonner";
+import {Toaster} from "@/components/ui/sonner";
 
 createRoot(
   document.getElementById("root")

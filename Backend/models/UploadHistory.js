@@ -34,6 +34,11 @@ const uploadHistorySchema = new mongoose.Schema(
       type: String,
       default: null,
     },
+    account: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Account",
+      required: true,
+    },
   },
   {
     timestamps: true,
@@ -43,6 +48,7 @@ const uploadHistorySchema = new mongoose.Schema(
 uploadHistorySchema.index(
   {
     user: 1,
+    account: 1,
     contentHash: 1,
   },
   {

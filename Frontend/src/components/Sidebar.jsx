@@ -78,6 +78,15 @@ export default function Sidebar({
         },
       ],
     },
+    {
+      title : "Accounts",
+      items : [
+      {
+      label: "Accounts",
+      path: "/accounts",
+      icon: WalletCards,
+    }]
+    },
 
     {
       title: "Assistant",

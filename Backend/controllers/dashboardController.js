@@ -39,7 +39,9 @@ export const getDashboardData = async (req, res) => {
 
     let income = 0;
     let expenses = 0;
+    let refunds = 0;
     let transfers = 0;
+    let creditCardPayments = 0;
     let transactionCount = 0;
 
     summary.forEach((item) => {
@@ -53,11 +55,21 @@ export const getDashboardData = async (req, res) => {
         expenses = item.total;
       }
 
+      if (item._id === "refund") {
+        refunds = item.total;
+      }
+
       if (item._id === "transfer") {
         transfers = item.total;
       }
+
+      if (item._id === "credit_card_payment") {
+        creditCardPayments = item.total;
+      }
     });
 
+
+    const netExpenses = Math.max(0, expenses - refunds);
     const balance = income - expenses;
 
     // 2. EXPENSES BY CATEGORY
@@ -65,13 +77,23 @@ export const getDashboardData = async (req, res) => {
       {
         $match: {
           ...transactionFilter,
-          type: "expense",
+          type: {
+            $in: ["expense", "refund"],
+          },
         },
       },
       {
         $group: {
           _id: "$category",
-          amount: { $sum: "$amount" },
+           amount: {
+            $sum: {
+              $cond: [
+                { $eq: ["$type", "refund"] },
+                { $multiply: ["$amount", -1] },
+                "$amount",
+              ],
+            },
+          },
           count: { $sum: 1 },
         },
       },
@@ -96,7 +118,7 @@ export const getDashboardData = async (req, res) => {
         $match: {
           ...transactionFilter,
           type: {
-            $in: ["income", "expense"],
+            $in: ["income", "expense", "refund"],
           },
         },
       },
@@ -117,15 +139,21 @@ export const getDashboardData = async (req, res) => {
             },
           },
 
-          expenses: {
-            $sum: {
-              $cond: [
-                { $eq: ["$type", "expense"] },
-                "$amount",
-                0,
-              ],
-            },
+         expenses: {
+          $sum: {
+            $cond: [
+              { $eq: ["$type", "expense"] },
+              "$amount",
+              {
+                $cond: [
+                  { $eq: ["$type", "refund"] },
+                  { $multiply: ["$amount", -1] },
+                  0,
+                ],
+              },
+            ],
           },
+        },
         },
       },
       {
@@ -162,9 +190,12 @@ export const getDashboardData = async (req, res) => {
 
       summary: {
         income,
-        expenses,
+        grossExpenses: expenses,
+        refunds,
+        expenses: netExpenses,
         balance,
         transfers,
+        creditCardPayments,
         transactionCount,
       },
 
