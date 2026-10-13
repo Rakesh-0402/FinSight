@@ -5,6 +5,11 @@ export const getFinancialContext = async (req, res) => {
     // Summary
     const summaryData = await Transaction.aggregate([
       {
+        $match : {
+          user : req.user._id,
+        }
+      },
+      {
         $group: {
           _id: "$type",
           total: { $sum: "$amount" },
@@ -30,6 +35,7 @@ export const getFinancialContext = async (req, res) => {
     const categorySpending = await Transaction.aggregate([
       {
         $match: {
+          user: req.user._id,
           type: "expense",
         },
       },
@@ -59,6 +65,7 @@ export const getFinancialContext = async (req, res) => {
     const monthlyData = await Transaction.aggregate([
       {
         $match: {
+          user : req.user._id,
           type: {
             $in: ["income", "expense"],
           },

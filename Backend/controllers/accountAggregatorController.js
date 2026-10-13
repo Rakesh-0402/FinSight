@@ -1,5 +1,6 @@
 import Account from "../models/Account.js";
 import Transaction from "../models/Transaction.js";
+import AccountAggregatorRequest from "../models/AccountAggregatorRequest.js";
 
 // --------------------------------------------------
 // Proxy configuration and shared helpers
@@ -148,10 +149,7 @@ const getDataRange = () => {
   };
 };
 
-// --------------------------------------------------
 // 1. Start bank connection / create consent
-// --------------------------------------------------
-
 export const startBankConnection = async (req, res) => {
   try {
     const { mobile } = req.body || {};
@@ -201,6 +199,19 @@ export const startBankConnection = async (req, res) => {
     }
 
     const consent = result.data;
+    await AccountAggregatorRequest.findOneAndUpdate(
+    { consentId: consent.id },
+    {
+      $set: {
+        user: req.user._id,
+        consentStatus: consent.status || "PENDING",
+        consentUrl: consent.url || null,
+      },
+      $setOnInsert: { consentId: consent.id },
+    },
+    { upsert: true, new: true }
+  );
+
 
     return res.status(200).json({
       success: true,
@@ -220,10 +231,7 @@ export const startBankConnection = async (req, res) => {
   }
 };
 
-// --------------------------------------------------
 // 2. Get consent status
-// --------------------------------------------------
-
 export const getConsentStatus = async (req, res) => {
   try {
     const { id } = req.params;
@@ -277,10 +285,7 @@ export const getConsentStatus = async (req, res) => {
   }
 };
 
-// --------------------------------------------------
 // 3. Create data session
-// --------------------------------------------------
-
 export const createDataSession = async (req, res) => {
   try {
     const { consentId } = req.body || {};
@@ -323,10 +328,28 @@ export const createDataSession = async (req, res) => {
       });
     }
 
-    return res.status(200).json({
-      success: true,
-      session: result.data,
-    });
+  const session = result.data;
+
+  await AccountAggregatorRequest.findOneAndUpdate(
+    { user: req.user._id, consentId },
+    {
+      $set: {
+        sessionId: session.id,
+        sessionStatus: session.status || "PENDING",
+      },
+      $setOnInsert: {
+        user: req.user._id,
+        consentId,
+      },
+    },
+    { upsert: true, new: true }
+  );
+
+  return res.status(200).json({
+    success: true,
+    session,
+  });
+
   } catch (error) {
     console.error("Create data session error:", error.message);
 
@@ -338,10 +361,8 @@ export const createDataSession = async (req, res) => {
   }
 };
 
-// --------------------------------------------------
-// 4. Get data session
-// --------------------------------------------------
 
+// 4. Get data session
 export const getDataSession = async (req, res) => {
   try {
     const { id } = req.params;
@@ -394,9 +415,7 @@ export const getDataSession = async (req, res) => {
   }
 };
 
-// --------------------------------------------------
 // Transaction classification helper
-// --------------------------------------------------
 
 const detectTransactionType = (bankTxn) => {
   const narration = (bankTxn.narration || "").toLowerCase();
@@ -433,10 +452,7 @@ const detectTransactionType = (bankTxn) => {
   return "expense";
 };
 
-// --------------------------------------------------
 // 5. Fetch session data and sync accounts/transactions
-// --------------------------------------------------
-
 export const syncAccountAggregatorData = async (req, res) => {
   try {
     const { sessionId } = req.body || {};

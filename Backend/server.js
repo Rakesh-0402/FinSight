@@ -14,6 +14,9 @@ import authRoutes from "./routes/authRoutes.js";
 import notificationRoutes from "./routes/notificationRoutes.js";
 import accountRoutes from "./routes/accountRoutes.js";
 import accountAggregatorRoutes from "./routes/accountAggregatorRoutes.js";
+import moneyPlanRoutes from "./routes/moneyPlanRoutes.js"
+import insightsRoutes from "./routes/insightsRoutes.js";
+
 const app = express();
 app.set("trust proxy", 1);
 
@@ -46,6 +49,8 @@ app.use(
   "/api/account-aggregator",
   accountAggregatorRoutes
 );
+app.use("/api/money-plan" , moneyPlanRoutes);
+app.use("/api/insights", insightsRoutes);
 
 const PORT = process.env.PORT || 5000;
 

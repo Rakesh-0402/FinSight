@@ -19,6 +19,8 @@ import ResetPassword from "./pages/ResetPassword";
 import PublicRoute from "./components/PublicRoute";
 import Accounts from "@/pages/Accounts";
 import AACallback from "@/pages/AACallback";
+import MoneyPlan from "./pages/MoneyPlan";
+import FinancialInsights from "./pages/FinancialInsights";
 
 function App() {
   return (
@@ -71,6 +73,10 @@ function App() {
             <Route path="/accounts" element={<Accounts />} />
 
             <Route path="/accounts/aa/callback" element={<AACallback />}/>
+
+            <Route path="/money-plan" element={<MoneyPlan />} />
+
+            <Route path="/financial-insights" element={<FinancialInsights />} />
 
           </Route>
 

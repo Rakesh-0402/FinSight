@@ -10,6 +10,8 @@ import {
   ChevronLeft,
   ChevronRight,
   WalletCards,
+  PiggyBank,
+  Activity,
 } from "lucide-react";
 
 import {NavLink,useNavigate} from "react-router-dom";
@@ -55,6 +57,17 @@ export default function Sidebar({
           path: "/upload",
           icon: Upload,
         },
+        {
+          label: "Money Plan",
+          path: "/money-plan",
+          icon: PiggyBank,
+        },
+        {
+          label: "Financial Insights",
+          path: "/financial-insights",
+          icon : Activity,
+        }
+
       ],
     },
 
